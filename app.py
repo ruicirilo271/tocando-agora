@@ -34,14 +34,50 @@ def get_now_playing(stream_url: str):
 
 
 def load_radios():
-    """Carrega top rádios do servidor DE1."""
+    """Carrega top rádios + rádios personalizadas."""
     global RADIO_LIST
     print("🔄 A ligar ao DE1 RadioBrowser...")
-    url = f"{RB_BASE}/json/stations/topclick"
-    r = requests.get(url, params={"limit": 150, "hidebroken": "true"}, timeout=10)
-    RADIO_LIST = r.json()
-    print("👍 Rádios carregadas:", len(RADIO_LIST))
 
+    url = f"{RB_BASE}/json/stations/topclick"
+    try:
+        r = requests.get(url, params={"limit": 150, "hidebroken": "true"}, timeout=10)
+        rb_radios = r.json()
+    except:
+        rb_radios = []
+
+    # Transformar RadioBrowser → formato igual aos personalizados
+    final_list = []
+
+    # Rádios personalizadas primeiro
+    for cr in CUSTOM_RADIOS:
+        final_list.append({
+            "name": cr["name"],
+            "country": cr["country"],
+            "url": cr["stream"],
+            "url_resolved": cr["stream"]
+        })
+
+    # Depois, todas as do RadioBrowser
+    for st in rb_radios:
+        final_list.append({
+            "name": st.get("name"),
+            "country": st.get("country"),
+            "url": st.get("url"),
+            "url_resolved": st.get("url_resolved")
+        })
+
+    RADIO_LIST = final_list
+
+    print("👍 Rádios carregadas (incluindo personalizadas):", len(RADIO_LIST))
+
+
+CUSTOM_RADIOS = [
+    {
+        "name": "Rádio Cidade",
+        "country": "Portugal",
+        "stream": "https://stream.zeno.fm/q9k377tdzy8uv"
+    }
+]
 
 @app.route("/")
 def index():
